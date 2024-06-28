@@ -16,7 +16,6 @@ router.post("/signup",async(req,res)=>{
         return
     }else{
         const hashedPass=await bcrypt.hash(password,10)
-        console.log(hashedPass)
         const newUser=new User({
             name:name,
             email:email,
@@ -48,9 +47,16 @@ router.post("/login",async(req,res)=>{
           if (result) {
             const key = generateKey();
             const token = jwt.sign({ userId: savedUser._id }, key);
+            res.cookie("_token",token,{
+              httpOnly: true, // Helps prevent XSS attacks
+              secure: false, // Ensures cookie is only sent over HTTPS in production
+              sameSite: 'none', // Controls when cookies are sent
+              maxAge: 24 * 60 * 60 * 1000 // Cookie expiration time (1 day in this case)
+            })
+            res.cookie("id",savedUser._id)
+            res.cookie("name",savedUser.name)
             return res.status(422).send({ message: "Logged IN", data: token,id:savedUser._id,name:savedUser.name });
           } else {
-            console.log("Error");
             return res.status(422).send({ error: "Invalid Credentials2" });
           }
         });
@@ -60,26 +66,41 @@ router.post("/login",async(req,res)=>{
     
 })
 
-router.post("/updateProfile",async(req,res)=>{
-  const {name,email,password,newPassword}=req.body
+router.post("/getDetails/:userId",async(req,res)=>{
+  const {userId}=req.params
   try{
-    const user=await User.findOne({email:email})
+    const user=await User.findById(userId)
+    const Newuser={
+      name:user.name,
+      email:user.email
+    }
+    res.send({data:Newuser})
+  }catch(err){
+    console.log(err)
+  }
+})
+
+router.post("/updateProfile",async(req,res)=>{
+  const {name,email,password,newPassword,id}=req.body
+  try{
+    const user=await User.findById(id)
     if(user){
       bcrypt.compare(password,user.password,(err,result)=>{
         if(result){
           const hashedPass=bcrypt.hash(newPassword,10)
           user.password=hashedPass
           user.name=name
-          res.status(200).send({message:"Password changed"})
+          user.email=email
+          return res.status(200).send({message:"Password changed"})
         }else{
-          res.status(500).send({error:"Invalid old password"})
+          return res.status(500).send({error:"Invalid old password"})
         }
       })
     }else{
-      res.send(400).send({error:"Please enter valid email"})
+      return res.status(400).send({error:"Please enter valid email"})
     }
   }catch(err){
-    res.send(440).send({error:"Something went wrong"})
+    return res.status(440).send({error:"Something went wrong"})
   }
 })
 
@@ -96,9 +117,7 @@ router.post("/saveTask/:id",async(req,res)=>{
     })
   
     const savedTask=await newTodo.save()
-  
     await User.findByIdAndUpdate(id,{$push:{todo:savedTask._id}})
-    console.log("done")
   }catch(err){
     console.log(err)
   }
@@ -106,14 +125,11 @@ router.post("/saveTask/:id",async(req,res)=>{
 
 router.get("/fetchTask/:id",async(req,res)=>{
   try {
-    console.log("hello")
     const { id } = req.params;
     const user = await User.findById(id).populate('todo');
     if (!user) {
-      console.log("not done")
       return res.status(404).json({ error: 'User not found' });
     }
-    console.log(user.todo[0])
     res.status(200).json({message:"Done",data:user.todo});
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -122,7 +138,6 @@ router.get("/fetchTask/:id",async(req,res)=>{
 
 router.put("/updateTask/:taskId", async (req, res) => {
   const { taskId } = req.params;
-  console.log(req.body)
   const { status} = req.body;
 
   try {
@@ -136,16 +151,13 @@ router.put("/updateTask/:taskId", async (req, res) => {
 
     res.status(200).send({ message: "Task updated successfully", data:updatedTask });
   } catch (error) {
-    console.log(error);
     res.status(500).send({ error: "Error updating task" });
   }
 });
  
 router.put('/updateChecklistItem/:taskId/:itemId', async (req, res) => {
-  // console.log("update")
   const { taskId, itemId } = req.params;
   const { checked } = req.body;
-  console.log(taskId,itemId,checked)
 
   try {
     const task = await Todo.findById(taskId);
@@ -175,7 +187,6 @@ router.get('/generateShareLink/:taskId', async (req, res) => {
     if (!task) {
       return res.status(404).send({ error: "Task not found" });
     }
-    // Generate a unique shareable link (in production, use a secure method like UUID)
     const shareLink = `http://localhost:5173/task/${taskId}/readonly`; // Example link
     res.send({ shareLink });
   } catch (error) {
@@ -184,7 +195,6 @@ router.get('/generateShareLink/:taskId', async (req, res) => {
 });
 
 router.get("/fetchTaskById/:taskid",async(req,res)=>{
-  console.log("Inside")
   const {taskid}=req.params
   const task=await Todo.findById(taskid)
   if(!task){
@@ -201,8 +211,58 @@ router.put("/deleteTask/:userId/:taskId",async(req,res)=>{
     await Todo.findByIdAndDelete(taskId);
     res.status(200).send({message:"Done"})
   }catch(err){
-    console.log(err)
     res.status(400).send({error:"Failed to delete"})
+  }
+})
+
+router.put("/updateTaskDetails/:taskId",async(req,res)=>{
+  const {taskId}=req.params
+  const {title,priority,id,status,checklist,duedate}=req.body
+  try{
+    const task = await Todo.findById(taskId)
+    if(!task){
+      // task.title=title
+      console.log("Error")
+    }else{
+      const updatedTask = await Todo.findByIdAndUpdate(
+        taskId,
+        { title, priority, status, checklist,duedate },
+        { new: true } // To return the updated document
+      );
+      console.log("Done:",updatedTask)
+    }
+  }catch(err){
+    console.log(err)
+  }
+})
+
+router.post("addEmails/:userId",async(req,res)=>{
+  const userId="667b0d37a0f03c0b5f454718"
+  const email="jaydeep"
+  try{
+    const user=await User.findById(userId)
+    if(user){
+      if(user.assignedTo.includes(email)){
+        res.status(400).send({error:"Email already exists"})
+      }else{
+        user.assignedTo.push(email)
+        res.status(200).send({message:"Email Added"})
+      }
+    }
+  }catch(err){
+    res.status(500).send({error:"Something went wrong please try again after few time"})
+  }
+})
+
+router.post("/fetchAllEmails/:userId",async(req,res)=>{
+  const {userId}=req.params
+  try{
+    const user=await User.findById(userId)
+    if(user){
+      res.status(200).send({data:user.assignedTo})
+    }
+  }catch(err){
+    res.status(500).send({error:"Something went wrong"})
   }
 })
 
