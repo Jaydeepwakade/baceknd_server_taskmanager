@@ -31,7 +31,7 @@ const TodoSchema=new mongoose.Schema({
         required:false
     },
 
-    assignedFrom:{
+    name:{
       type:String,
     }
 })

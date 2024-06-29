@@ -127,6 +127,15 @@ router.post("/saveTask/:id", async (req, res) => {
     await User.findByIdAndUpdate(id, { $push: { todo: savedTask._id } });
     const user = await User.findOne({ email: assignee });
     if (user) {
+      const newTodo = await Todo({
+        title,
+        priority,
+        status,
+        checklist,
+        dueDate: duedate,
+        name: user.name,
+      });
+      const savedTask = await newTodo.save();
       user.todo.push(savedTask._id);
       await user.save();
     }
@@ -154,7 +163,7 @@ router.get("/fetchTask/:id/:day", async (req, res) => {
       const nextWeek = new Date(today);
       nextWeek.setDate(today.getDate() + 7);
 
-      const tasksNextWeek = allTasks.filter(task => {
+      const tasksNextWeek = allTasks.filter((task) => {
         const taskDate = new Date(task.dueDate);
         return taskDate >= today && taskDate < nextWeek;
       });
@@ -164,7 +173,7 @@ router.get("/fetchTask/:id/:day", async (req, res) => {
       const nextMonth = new Date();
       nextMonth.setMonth(today.getMonth() + 1);
 
-      const tasksNextMonth = allTasks.filter(task => {
+      const tasksNextMonth = allTasks.filter((task) => {
         const taskDate = new Date(task.dueDate);
         return taskDate >= today && taskDate < nextMonth;
       });
