@@ -28,7 +28,7 @@ const userSchema = new mongoose.Schema({
     default:Date.now
   },
 
-  assignedTo:[
+  friends:[
     {type:String,unique:true}
   ]
 
