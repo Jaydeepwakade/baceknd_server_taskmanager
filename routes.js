@@ -185,7 +185,6 @@ router.get("/fetchTask/:id/:day", async (req, res) => {
     res.status(500).json({ error: "Server error", message: err.message });
   }
 });
-
 router.put("/updateTask/:taskId", async (req, res) => {
   const { taskId } = req.params;
   const { status } = req.body;
