@@ -12,7 +12,9 @@ router.post("/signup", async (req, res) => {
   try {
     const existingUser = await User.findOne({ email: email });
     if (existingUser) {
-      return res.status(400).send({ error: "User with this email address already exists" });
+      return res
+        .status(400)
+        .send({ error: "User with this email address already exists" });
     }
 
     const hashedPass = await bcrypt.hash(password, 10);
@@ -21,13 +23,15 @@ router.post("/signup", async (req, res) => {
       name: name,
       email: email,
       password: hashedPass,
-      friends: []
+      friends: [],
     });
     await newUser.save();
     res.status(200).send({ message: "User Registered Successfully" });
   } catch (err) {
     console.error(err);
-    res.status(500).send({ error: "Error occurred while saving the user: " + err.message });
+    res
+      .status(500)
+      .send({ error: "Error occurred while saving the user: " + err.message });
   }
 });
 
@@ -77,14 +81,14 @@ router.post("/getDetails/:userId", async (req, res) => {
 
 router.post("/updateProfile", async (req, res) => {
   const { name, email, password, newPassword, id } = req.body;
-  
+
   try {
     const user = await User.findById(id);
     console.log(user);
 
     if (user) {
       const isMatch = await bcrypt.compare(password, user.password);
-      
+
       if (isMatch) {
         const hashedPass = await bcrypt.hash(newPassword, 10);
         user.password = hashedPass;
@@ -104,7 +108,7 @@ router.post("/updateProfile", async (req, res) => {
   }
 });
 
-router.post("/saveTask/:id", async (req, res) => {  
+router.post("/saveTask/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { title, priority, status, checklist, duedate, assignee } = req.body;
@@ -116,11 +120,12 @@ router.post("/saveTask/:id", async (req, res) => {
       dueDate: duedate,
     });
 
-    let user
-    if(assignee && assignee.value){
+    let user;
+    if (assignee && assignee.value) {
       user = await User.findOne({ email: assignee.value });
     }
     if (user) {
+      const mainUser = await User.findById(id);
       const newTodo2 = await Todo({
         title,
         priority,
@@ -133,10 +138,10 @@ router.post("/saveTask/:id", async (req, res) => {
       await User.findByIdAndUpdate(id, { $push: { todo: savedTask._id } });
       user.todo.push(savedTask._id);
       await user.save();
-      console.log("Data:",user)
-    }else{
-    const savedTask = await newTodo.save();
-    await User.findByIdAndUpdate(id, { $push: { todo: savedTask._id } });
+      console.log("Data:", user);
+    } else {
+      const savedTask = await newTodo.save();
+      await User.findByIdAndUpdate(id, { $push: { todo: savedTask._id } });
     }
   } catch (err) {
     console.log(err);
@@ -184,6 +189,7 @@ router.get("/fetchTask/:id/:day", async (req, res) => {
     res.status(500).json({ error: "Server error", message: err.message });
   }
 });
+
 router.put("/updateTask/:taskId", async (req, res) => {
   const { taskId } = req.params;
   const { status } = req.body;
@@ -272,39 +278,100 @@ router.put("/deleteTask/:userId/:taskId", async (req, res) => {
   }
 });
 
+// router.put("/updateTaskDetails/:taskId", async (req, res) => {
+//   const { taskId } = req.params;
+//   const { title, priority, status, checklist, duedate, assignee } = req.body;
+//   console.log(assignee);
+
+//   if (assignee) {
+//     const updatedTask = await Todo.findByIdAndUpdate(
+//       taskId,
+//       { title, priority, status, checklist, dueDate: duedate, name: assignee },
+//       { new: true }
+//     );
+
+//     const user = await User.findOne({ email: assignee });
+//     if (user) {
+//       user.todo.push(updatedTask._id);
+//       await user.save();
+//     } else {
+//       return res.status(404).json({ message: "Assignee not found" });
+//     }
+//   } else {
+//     const updatedTask = await Todo.findByIdAndUpdate(
+//       taskId,
+//       { title, priority, status, checklist, dueDate: duedate },
+//       { new: true }
+//     );
+//   }
+// });
+// try {
+//   const task = await Todo.findById(taskId);
+//   if (!task) {
+//     return res.status(404).json({ message: "Task not found" });
+//   }
+
+//   const updatedTask = await Todo.findByIdAndUpdate(
+//     taskId,
+//     { title, priority, status, checklist, dueDate:duedate },
+//     { new: true }
+//   );
+
+//   if (assignee) {
+//     const user = await User.findOne({ email: assignee });
+//     if (user) {
+//       user.todo.push(updatedTask._id);
+//       await user.save();
+//     } else {
+//       return res.status(404).json({ message: "Assignee not found" });
+//     }
+//   }
+
+//   res
+//     .status(200)
+//     .json({ message: "Task updated successfully", task: updatedTask });
+// } catch (err) {
+//   res.status(500).json({ message: "Server error", error: err.message });
+// }
+// });
+
 router.put("/updateTaskDetails/:taskId", async (req, res) => {
   const { taskId } = req.params;
   const { title, priority, status, checklist, duedate, assignee } = req.body;
+  console.log(assignee);
 
   try {
-    const task = await Todo.findById(taskId);
-    if (!task) {
-      return res.status(404).json({ message: "Task not found" });
+    const updateData = { title, priority, status, checklist, dueDate: duedate };
+    
+    if (assignee) {
+      updateData.name = assignee;
     }
 
-    const updatedTask = await Todo.findByIdAndUpdate(
-      taskId,
-      { title, priority, status, checklist, duedate },
-      { new: true }
-    );
+    const updatedTask = await Todo.findByIdAndUpdate(taskId, updateData, { new: true });
+
+    if (!updatedTask) {
+      return res.status(404).json({ message: "Task not found" });
+    }
 
     if (assignee) {
       const user = await User.findOne({ email: assignee });
       if (user) {
-        user.todo.push(updatedTask._id);
-        await user.save();
+        if (!user.todo.includes(updatedTask._id)) {
+          user.todo.push(updatedTask._id);
+          await user.save();
+        }
       } else {
         return res.status(404).json({ message: "Assignee not found" });
       }
     }
 
-    res
-      .status(200)
-      .json({ message: "Task updated successfully", task: updatedTask });
+    res.status(200).json({ message: "Task updated successfully", task: updatedTask });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 });
+
 
 router.put("/addEmails/:userId", async (req, res) => {
   const { userId } = req.params;

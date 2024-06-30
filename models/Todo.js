@@ -33,6 +33,10 @@ const TodoSchema=new mongoose.Schema({
 
     name:{
       type:String,
+    },
+
+    assignerName:{
+      type:String
     }
 })
 
