@@ -50,14 +50,6 @@ router.post("/login", async (req, res) => {
       if (result) {
         const key = generateKey();
         const token = jwt.sign({ userId: savedUser._id }, key);
-        res.cookie("_token", token, {
-          httpOnly: true, // Helps prevent XSS attacks
-          secure: false, // Ensures cookie is only sent over HTTPS in production
-          sameSite: "none", // Controls when cookies are sent
-          maxAge: 24 * 60 * 60 * 1000, // Cookie expiration time (1 day in this case)
-        });
-        res.cookie("id", savedUser._id);
-        res.cookie("name", savedUser.name);
         return res.status(422).send({
           message: "Logged IN",
           data: token,
@@ -89,25 +81,30 @@ router.post("/getDetails/:userId", async (req, res) => {
 
 router.post("/updateProfile", async (req, res) => {
   const { name, email, password, newPassword, id } = req.body;
+  
   try {
     const user = await User.findById(id);
+    console.log(user);
+
     if (user) {
-      bcrypt.compare(password, user.password, (err, result) => {
-        if (result) {
-          const hashedPass = bcrypt.hash(newPassword, 10);
-          user.password = hashedPass;
-          user.name = name;
-          user.email = email;
-          return res.status(200).send({ message: "Password changed" });
-        } else {
-          return res.status(500).send({ error: "Invalid old password" });
-        }
-      });
+      const isMatch = await bcrypt.compare(password, user.password);
+      
+      if (isMatch) {
+        const hashedPass = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPass;
+        user.name = name;
+        user.email = email;
+        await user.save();
+        return res.status(200).send({ message: "Password changed" });
+      } else {
+        return res.status(400).send({ error: "Invalid old password" });
+      }
     } else {
       return res.status(400).send({ error: "Please enter valid email" });
     }
   } catch (err) {
-    return res.status(440).send({ error: "Something went wrong" });
+    console.error(err);
+    return res.status(500).send({ error: "Something went wrong" });
   }
 });
 
