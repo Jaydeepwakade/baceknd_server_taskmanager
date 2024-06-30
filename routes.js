@@ -246,7 +246,7 @@ router.get("/generateShareLink/:taskId", async (req, res) => {
     if (!task) {
       return res.status(404).send({ error: "Task not found" });
     }
-    const shareLink = `https://taskmanager-alpha-gray.vercel.app/task/${taskId}/readonly`;
+    const shareLink = `https://task-manager-final.vercel.app/task/${taskId}/readonly`;
     res.send({ shareLink });
   } catch (error) {
     res.status(500).send(error);
@@ -277,63 +277,6 @@ router.put("/deleteTask/:userId/:taskId", async (req, res) => {
     res.status(400).send({ error: "Failed to delete" });
   }
 });
-
-// router.put("/updateTaskDetails/:taskId", async (req, res) => {
-//   const { taskId } = req.params;
-//   const { title, priority, status, checklist, duedate, assignee } = req.body;
-//   console.log(assignee);
-
-//   if (assignee) {
-//     const updatedTask = await Todo.findByIdAndUpdate(
-//       taskId,
-//       { title, priority, status, checklist, dueDate: duedate, name: assignee },
-//       { new: true }
-//     );
-
-//     const user = await User.findOne({ email: assignee });
-//     if (user) {
-//       user.todo.push(updatedTask._id);
-//       await user.save();
-//     } else {
-//       return res.status(404).json({ message: "Assignee not found" });
-//     }
-//   } else {
-//     const updatedTask = await Todo.findByIdAndUpdate(
-//       taskId,
-//       { title, priority, status, checklist, dueDate: duedate },
-//       { new: true }
-//     );
-//   }
-// });
-// try {
-//   const task = await Todo.findById(taskId);
-//   if (!task) {
-//     return res.status(404).json({ message: "Task not found" });
-//   }
-
-//   const updatedTask = await Todo.findByIdAndUpdate(
-//     taskId,
-//     { title, priority, status, checklist, dueDate:duedate },
-//     { new: true }
-//   );
-
-//   if (assignee) {
-//     const user = await User.findOne({ email: assignee });
-//     if (user) {
-//       user.todo.push(updatedTask._id);
-//       await user.save();
-//     } else {
-//       return res.status(404).json({ message: "Assignee not found" });
-//     }
-//   }
-
-//   res
-//     .status(200)
-//     .json({ message: "Task updated successfully", task: updatedTask });
-// } catch (err) {
-//   res.status(500).json({ message: "Server error", error: err.message });
-// }
-// });
 
 router.put("/updateTaskDetails/:taskId", async (req, res) => {
   const { taskId } = req.params;
