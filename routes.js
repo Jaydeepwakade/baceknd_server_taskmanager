@@ -235,13 +235,12 @@ router.put("/updateChecklistItem/:taskId/:itemId", async (req, res) => {
 
 router.get("/generateShareLink/:taskId", async (req, res) => {
   const { taskId } = req.params;
-
   try {
     const task = await Todo.findById(taskId);
     if (!task) {
       return res.status(404).send({ error: "Task not found" });
     }
-    const shareLink = 'https://taskmanager-alpha-gray.vercel.app/task/${taskId}/readonly';
+    const shareLink = `https://taskmanager-alpha-gray.vercel.app/task/${taskId}/readonly`;
     res.send({ shareLink });
   } catch (error) {
     res.status(500).send(error);
