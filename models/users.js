@@ -16,22 +16,24 @@ const userSchema = new mongoose.Schema({
     required: true,
   },
 
-  todo:[
+  todo: [
     {
-      type:mongoose.Schema.Types.ObjectId,
-      ref:"Todo"
-    }
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Todo",
+    },
   ],
 
-  createdAt:{
-    type:Date,
-    default:Date.now
+  createdAt: {
+    type: Date,
+    default: Date.now,
   },
 
-  friends:[
-    {type:String,unique:true}
-  ]
-
+  friends: [
+    {
+      type: String,
+      default: [],
+    },
+  ],
 });
 
 const User = mongoose.model("User", userSchema);

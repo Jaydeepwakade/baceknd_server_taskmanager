@@ -8,30 +8,26 @@ const Todo = require("./models/Todo");
 
 router.post("/signup", async (req, res) => {
   const { name, email, password } = req.body;
-  const user = await User.findOne({ email: email });
-  console.log(name);
-  if (user) {
-    res
-      .status(400)
-      .send({ error: "User with this email address already exists" });
-    return;
-  } else {
+
+  try {
+    const existingUser = await User.findOne({ email: email });
+    if (existingUser) {
+      return res.status(400).send({ error: "User with this email address already exists" });
+    }
+
     const hashedPass = await bcrypt.hash(password, 10);
+
     const newUser = new User({
       name: name,
       email: email,
       password: hashedPass,
+      friends: []
     });
-
-    try {
-      await newUser.save();
-      res.status(200).send({ message: "User Registered Successfully" });
-    } catch (err) {
-      console.log(err);
-      res
-        .status(400)
-        .send({ error: "Error occured while saving the user: ", err });
-    }
+    await newUser.save();
+    res.status(200).send({ message: "User Registered Successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: "Error occurred while saving the user: " + err.message });
   }
 });
 
@@ -108,11 +104,10 @@ router.post("/updateProfile", async (req, res) => {
   }
 });
 
-router.post("/saveTask/:id", async (req, res) => {
+router.post("/saveTask/:id", async (req, res) => {  
   try {
     const { id } = req.params;
     const { title, priority, status, checklist, duedate, assignee } = req.body;
-
     const newTodo = await Todo({
       title,
       priority,
@@ -120,11 +115,13 @@ router.post("/saveTask/:id", async (req, res) => {
       checklist,
       dueDate: duedate,
     });
-    const savedTask = await newTodo.save();
-    await User.findByIdAndUpdate(id, { $push: { todo: savedTask._id } });
-    const user = await User.findOne({ email: assignee });
+
+    let user
+    if(assignee && assignee.value){
+      user = await User.findOne({ email: assignee.value });
+    }
     if (user) {
-      const newTodo = await Todo({
+      const newTodo2 = await Todo({
         title,
         priority,
         status,
@@ -132,9 +129,14 @@ router.post("/saveTask/:id", async (req, res) => {
         dueDate: duedate,
         name: user.name,
       });
-      const savedTask = await newTodo.save();
+      const savedTask = await newTodo2.save();
+      await User.findByIdAndUpdate(id, { $push: { todo: savedTask._id } });
       user.todo.push(savedTask._id);
       await user.save();
+      console.log("Data:",user)
+    }else{
+    const savedTask = await newTodo.save();
+    await User.findByIdAndUpdate(id, { $push: { todo: savedTask._id } });
     }
   } catch (err) {
     console.log(err);
