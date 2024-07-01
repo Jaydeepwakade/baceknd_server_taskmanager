@@ -124,8 +124,8 @@ router.post("/saveTask/:id", async (req, res) => {
     });
 
     let user;
-    if (assignee && assignee.value) {
-      user = await User.findOne({ email: assignee.value });
+    if (assignee) {
+      user = await User.findOne({ email: assignee });
     }
     if (user) {
       const mainUser = await User.findById(id);
