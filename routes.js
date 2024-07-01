@@ -90,6 +90,9 @@ router.post("/updateProfile", async (req, res) => {
       const isMatch = await bcrypt.compare(password, user.password);
 
       if (isMatch) {
+        if(password===newPassword){
+          return res.status(400).send({ errorPass: "Don't use old password" });
+        }       
         const hashedPass = await bcrypt.hash(newPassword, 10);
         user.password = hashedPass;
         user.name = name;
