@@ -177,12 +177,13 @@ router.get("/fetchTask/:id/:day", async (req, res) => {
       res.status(200).json({ message: "Done", data: tasksNextWeek });
     } else if (day === "next-month") {
       const today = new Date();
-      const nextMonth = new Date();
-      nextMonth.setMonth(today.getMonth() + 1);
+      // const nextMonth = new Date();
+      // nextMonth.setMonth(today.getMonth() + 1);
+      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Get the last day of the current month
 
       const tasksNextMonth = allTasks.filter((task) => {
         const taskDate = new Date(task.dueDate);
-        return taskDate >= today && taskDate < nextMonth;
+        return taskDate >= today && taskDate < endOfMonth;
       });
       res.status(200).json({ message: "Done", data: tasksNextMonth });
     } else {
@@ -375,44 +376,6 @@ router.post("/addData/:userId/:taskid", async (req, res) => {
   }
 });
 
-router.get("/tasks/next-week", async (req, res) => {
-  try {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const nextWeek = new Date(today);
-    nextWeek.setDate(today.getDate() + 7);
-    console.log(today, " ", nextWeek);
 
-    const tasksNextWeek = await Todo.find({
-      dueDate: {
-        $gte: today,
-        $lt: nextWeek,
-      },
-    });
-    console.log(tasksNextWeek);
-    res.status(200).json(tasksNextWeek);
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error });
-  }
-});
-
-router.get("/tasks/next-month", async (req, res) => {
-  try {
-    const today = new Date();
-    const nextMonth = new Date();
-    nextMonth.setMonth(today.getMonth() + 1);
-
-    const tasksNextMonth = await Todo.find({
-      dueDate: {
-        $gte: today,
-        $lt: nextMonth,
-      },
-    });
-    console.log(tasksNextMonth);
-    res.status(200).json(tasksNextMonth);
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error });
-  }
-});
 
 module.exports = router;
