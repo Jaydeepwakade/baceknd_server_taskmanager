@@ -41,7 +41,12 @@ const TodoSchema=new mongoose.Schema({
 
     assignerName:{
       type:String
-    }
+    },
+
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
 })
 
 const Todo=mongoose.model("Todo",TodoSchema)

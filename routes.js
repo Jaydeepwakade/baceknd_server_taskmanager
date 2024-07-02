@@ -84,13 +84,20 @@ router.post("/updateProfile", async (req, res) => {
 
   try {
     const user = await User.findById(id);
-    console.log(user);
+    console.log(req.body);
+
+    if(password==='' && newPassword===''){
+      user.name=name
+      user.email=email
+      await user.save()
+      return res.status(200).send({ nameChanged: "Name and email changed" });
+    }
 
     if (user) {
       const isMatch = await bcrypt.compare(password, user.password);
 
       if (isMatch) {
-        if(password===newPassword){
+        if(password===newPassword || (password==='' && newPassword==='')){
           return res.status(400).send({ errorPass: "Don't use old password" });
         }       
         const hashedPass = await bcrypt.hash(newPassword, 10);
@@ -153,8 +160,8 @@ router.post("/saveTask/:mainId", async (req, res) => {
   }
 });
 
+
 router.get("/fetchTask/:id/:day", async (req, res) => {
-  console.log("Hello")
   const { id, day } = req.params;
 
   try {
@@ -164,29 +171,36 @@ router.get("/fetchTask/:id/:day", async (req, res) => {
     }
 
     const allTasks = user.todo;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
     if (day === "today") {
-      res.status(200).json({ message: "Done", data: allTasks });
+      const tasksToday = allTasks.filter((task) => {
+        const taskDate = new Date(task.createdAt);
+        taskDate.setHours(0, 0, 0, 0);
+        return taskDate.getTime() === today.getTime();
+      });
+      res.status(200).json({ message: "Done", data: tasksToday });
     } else if (day === "next-week") {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const nextWeek = new Date(today);
-      nextWeek.setDate(today.getDate() + 7);
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - 7);
 
-      const tasksNextWeek = allTasks.filter((task) => {
-        const taskDate = new Date(task.dueDate);
-        return taskDate >= today && taskDate < nextWeek;
+      const tasksThisWeek = allTasks.filter((task) => {
+        const taskDate = new Date(task.createdAt);
+        taskDate.setHours(0, 0, 0, 0);
+        return taskDate >= startOfWeek && taskDate <= today;
       });
-      res.status(200).json({ message: "Done", data: tasksNextWeek });
+      res.status(200).json({ message: "Done", data: tasksThisWeek });
     } else if (day === "next-month") {
-      const today = new Date();
-      const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Get the last day of the current month
+      const startOfMonth = new Date(today);
+      startOfMonth.setDate(today.getDate() - 30);
 
-      const tasksNextMonth = allTasks.filter((task) => {
-        const taskDate = new Date(task.dueDate);
-        return taskDate >= today && taskDate < endOfMonth;
+      const tasksThisMonth = allTasks.filter((task) => {
+        const taskDate = new Date(task.createdAt);
+        taskDate.setHours(0, 0, 0, 0);
+        return taskDate >= startOfMonth && taskDate <= today;
       });
-      res.status(200).json({ message: "Done", data: tasksNextMonth });
+      res.status(200).json({ message: "Done", data: tasksThisMonth });
     } else {
       res.status(400).json({ error: "Invalid day parameter" });
     }
@@ -194,6 +208,7 @@ router.get("/fetchTask/:id/:day", async (req, res) => {
     res.status(500).json({ error: "Server error", message: err.message });
   }
 });
+
 
 router.put("/updateTask/:taskId", async (req, res) => {
   const { taskId } = req.params;
