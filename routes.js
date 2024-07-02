@@ -111,10 +111,12 @@ router.post("/updateProfile", async (req, res) => {
   }
 });
 
-router.post("/saveTask/:id", async (req, res) => {
+router.post("/saveTask/:mainId", async (req, res) => {
+  console.log("heelo")
   try {
-    const { id } = req.params;
+    const { mainId } = req.params;
     const { title, priority, status, checklist, duedate, assignee } = req.body;
+    console.log(req.body)
     const newTodo = await Todo({
       title,
       priority,
@@ -128,7 +130,7 @@ router.post("/saveTask/:id", async (req, res) => {
       user = await User.findOne({ email: assignee });
     }
     if (user) {
-      const mainUser = await User.findById(id);
+      const mainUser = await User.findById(mainId);
       const newTodo2 = await Todo({
         title,
         priority,
@@ -138,13 +140,13 @@ router.post("/saveTask/:id", async (req, res) => {
         name: user.name,
       });
       const savedTask = await newTodo2.save();
-      await User.findByIdAndUpdate(id, { $push: { todo: savedTask._id } });
+      await User.findByIdAndUpdate(mainId, { $push: { todo: savedTask._id } });
       user.todo.push(savedTask._id);
       await user.save();
       console.log("Data:", user);
     } else {
       const savedTask = await newTodo.save();
-      await User.findByIdAndUpdate(id, { $push: { todo: savedTask._id } });
+      await User.findByIdAndUpdate(mainId, { $push: { todo: savedTask._id } });
     }
   } catch (err) {
     console.log(err);
@@ -152,6 +154,7 @@ router.post("/saveTask/:id", async (req, res) => {
 });
 
 router.get("/fetchTask/:id/:day", async (req, res) => {
+  console.log("Hello")
   const { id, day } = req.params;
 
   try {
@@ -177,8 +180,6 @@ router.get("/fetchTask/:id/:day", async (req, res) => {
       res.status(200).json({ message: "Done", data: tasksNextWeek });
     } else if (day === "next-month") {
       const today = new Date();
-      // const nextMonth = new Date();
-      // nextMonth.setMonth(today.getMonth() + 1);
       const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Get the last day of the current month
 
       const tasksNextMonth = allTasks.filter((task) => {
@@ -250,7 +251,7 @@ router.get("/generateShareLink/:taskId", async (req, res) => {
     if (!task) {
       return res.status(404).send({ error: "Task not found" });
     }
-    const shareLink =`https://task-manager-final.vercel.app/task/${taskId}/readonly`;
+    const shareLink =`http://localhost:5173/task/${taskId}/readonly`;
     res.send({ shareLink });
   } catch (error) {
     res.status(500).send(error);

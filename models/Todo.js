@@ -1,6 +1,10 @@
 const mongoose=require("mongoose")
 
 const checklistSchema = new mongoose.Schema({
+    id:{
+      type:Number,
+      required:false
+    },
     task: {
       type: String,
       required: true
