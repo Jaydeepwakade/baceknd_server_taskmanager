@@ -143,7 +143,7 @@ router.post("/saveTask/:mainId", async (req, res) => {
       user = await User.findOne({ email: assignee });
     }
     if (user) {
-      const mainUser = await User.findById(mainId);
+      // const mainUser = await User.findById(mainId);
       const newTodo2 = await Todo({
         title,
         priority,
@@ -156,13 +156,49 @@ router.post("/saveTask/:mainId", async (req, res) => {
       await User.findByIdAndUpdate(mainId, { $push: { todo: savedTask._id } });
       user.todo.push(savedTask._id);
       await user.save();
-      console.log("Data:", user);
     } else {
       const savedTask = await newTodo.save();
       await User.findByIdAndUpdate(mainId, { $push: { todo: savedTask._id } });
     }
   } catch (err) {
     console.log(err);
+  }
+});
+
+router.put("/updateTaskDetails/:taskId", async (req, res) => {
+  const { taskId } = req.params;
+  const { title, priority, status, checklist, duedate, assignee } = req.body;
+  console.log(assignee);
+
+  try {
+    const updateData = { title, priority, status, checklist, dueDate: duedate };
+    
+    if (assignee) {
+      updateData.name = assignee.value;
+    }
+
+    const updatedTask = await Todo.findByIdAndUpdate(taskId, updateData, { new: true });
+
+    if (!updatedTask) {
+      return res.status(404).json({ message: "Task not found" });
+    }
+
+    if (assignee) {
+      const user = await User.findOne({ email: assignee.value });
+      if (user) {
+        if (!user.todo.includes(updatedTask._id)) {
+          user.todo.push(updatedTask._id);
+          await user.save();
+        }
+      } else {
+        return res.status(404).json({ message: "Assignee not found" });
+      }
+    }
+
+    res.status(200).json({ message: "Task updated successfully", task: updatedTask });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
@@ -301,43 +337,6 @@ router.put("/deleteTask/:userId/:taskId", async (req, res) => {
     res.status(200).send({ message: "Done" });
   } catch (err) {
     res.status(400).send({ error: "Failed to delete" });
-  }
-});
-
-router.put("/updateTaskDetails/:taskId", async (req, res) => {
-  const { taskId } = req.params;
-  const { title, priority, status, checklist, duedate, assignee } = req.body;
-  console.log(assignee);
-
-  try {
-    const updateData = { title, priority, status, checklist, dueDate: duedate };
-    
-    if (assignee) {
-      updateData.name = assignee.value;
-    }
-
-    const updatedTask = await Todo.findByIdAndUpdate(taskId, updateData, { new: true });
-
-    if (!updatedTask) {
-      return res.status(404).json({ message: "Task not found" });
-    }
-
-    if (assignee) {
-      const user = await User.findOne({ email: assignee.value });
-      if (user) {
-        if (!user.todo.includes(updatedTask._id)) {
-          user.todo.push(updatedTask._id);
-          await user.save();
-        }
-      } else {
-        return res.status(404).json({ message: "Assignee not found" });
-      }
-    }
-
-    res.status(200).json({ message: "Task updated successfully", task: updatedTask });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error", error: err.message });
   }
 });
 
