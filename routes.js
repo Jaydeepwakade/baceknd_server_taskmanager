@@ -83,9 +83,7 @@ router.post("/updateProfile", async (req, res) => {
   const { name, email, password, newPassword, id } = req.body;
 
   try {
-    const user = await User.findById(id);
-    console.log(req.body);
-
+    const user = await User.findById(id);;
     if(password==='' && newPassword===''){
       if(user.email===email){
         user.name=name
@@ -125,11 +123,9 @@ router.post("/updateProfile", async (req, res) => {
 });
 
 router.post("/saveTask/:mainId", async (req, res) => {
-  console.log("heelo")
   try {
     const { mainId } = req.params;
     const { title, priority, status, checklist, duedate, assignee } = req.body;
-    console.log(req.body)
     const newTodo = await Todo({
       title,
       priority,
@@ -168,7 +164,6 @@ router.post("/saveTask/:mainId", async (req, res) => {
 router.put("/updateTaskDetails/:taskId", async (req, res) => {
   const { taskId } = req.params;
   const { title, priority, status, checklist, duedate, assignee } = req.body;
-  console.log(assignee);
 
   try {
     const updateData = { title, priority, status, checklist, dueDate: duedate };
@@ -367,7 +362,6 @@ router.post("/fetchAllEmails/:userId", async (req, res) => {
   try {
     const user = await User.findById(userId);
     if (user) {
-      // console.log(user.assignedTo);
       res.status(200).send({ data: user.friends });
     }
   } catch (err) {
