@@ -87,10 +87,16 @@ router.post("/updateProfile", async (req, res) => {
     console.log(req.body);
 
     if(password==='' && newPassword===''){
-      user.name=name
-      user.email=email
-      await user.save()
-      return res.status(200).send({ nameChanged: "Name and email changed" });
+      if(user.email===email){
+        user.name=name
+        await user.save()
+        return res.status(200).send({ nameChanged: "Name changed",name:name });
+      }else{
+        user.email=email
+        await user.save()
+        return res.status(200).send({ emailChanged: "Name and email changed" });
+
+      }
     }
 
     if (user) {
